@@ -1,5 +1,7 @@
 package pl.coderslab.entity;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.sql.*;
 import java.util.Arrays;
 
@@ -23,16 +25,17 @@ public class UserDao {
     private static final String FIND_ALL_USERS_QUERY =
             "SELECT * FROM users";
 
-//    public String hashPassword(String password) {
-//        return BCrypt.hashpw(password, BCrypt.gensalt());
-//    }
+    public String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt());
+    }
 
     public User create(User user){
         try(Connection conn = DbUtil.getConection()){ // łączymy sie z baza danych try with resources więc nie trzeba conn.close()
             PreparedStatement statement = conn.prepareStatement(CREATE_USER_QUERY, Statement.RETURN_GENERATED_KEYS);//tworzymy obiekt statment klasy preparedstatement, dzięki wywołaniu metody preparedstatement() na obiekcie conn
             statement.setString(1,user.getUserName());
             statement.setString(2,user.getEmail());
-            statement.setString(3, user.getPassword());
+            statement.setString(3,hashPassword(user.getPassword())); // metoda do szyfrowania hasła
+//            statement.setString(3, user.getPassword());
             statement.executeUpdate();//wywołanie zapytania executeUpdate(np. dla INSERT, UPDATE, DELETE, CREATE, ALTER)
             ResultSet resultSet = statement.getGeneratedKeys();
             if(resultSet.next()){
@@ -50,7 +53,7 @@ public class UserDao {
             PreparedStatement statement = conn.prepareStatement(UPDATE_USER_QUERY); // zapisanie do zmiennej statement naszego zapytania
             statement.setString(1, user.getUserName());// wywołanie na tej zmiennej metody setString(ustawienie na pierwszym pytajniku gettera obiektu user wartością którą chcemy nadpisać)
             statement.setString(2, user.getEmail());  // tylko te parametry które sa określone w wywołanej wczesniej metodzie read bedą sie wykonywały w metodzie update
-            statement.setString(3, user.getPassword());
+            statement.setString(3, hashPassword(user.getPassword()));
             statement.setInt(4, user.getId());
             statement.executeUpdate();
         } catch (SQLException sqlException) {
